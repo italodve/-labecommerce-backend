@@ -2,22 +2,32 @@
 
 CREATE TABLE  users (
 id TEXT PRIMARY KEY UNIQUE NOT NULL,
+name TEXT UNIQUE NOT NULL,
 email TEXT UNIQUE NOT NULL,
-password TEXT NOT NULL
+password TEXT NOT NULL,
+createdAt TEXT DEFAULT (DATETIME()) NOT NULL,
+status INTEGER DEFAULT (0) NOT NULL
 );
 
-INSERT INTO users (id, email, password) 
-VALUES ("3", "roberto@gmail.com", "1234" );
+DROP TABLE users;
+
+INSERT INTO users (id, name, email, password) 
+VALUES ("1", "joão", "joão@gmail.com", "1234"),("2", "josé", "josé@gmail.com", "1234"),("3", "joas", "joas@gmail.com", "1234");
 
 CREATE TABLE products (
 id TEXT PRIMARY KEY UNIQUE NOT NULL,
 name TEXT NOT NULL,
 price REAL NOT NULL,
-category TEXT NOT NULL
+description TEXT NOT NULL,
+imageUrl TEXT
 );
 
-INSERT INTO products (id,name,price,category)
-VALUES("3","HeadsetLogitech", 400, "periferico");
+DROP TABLE products;
+
+INSERT INTO products (id,name,price,description,imageUrl)
+VALUES("1","HeadsetGamer", 400, "Melhor headset para jogos","https://th.bing.com/th/id/OIP.RnzfmvWDRQ9GitrTp12yRgHaHa?pid=ImgDet&rs=1"),
+("2","MouseGamer", 300, "mouse preciso para games","https://th.bing.com/th/id/OIP.1wnQhbAx1l4PsraOdp4gtwHaGS?pid=ImgDet&rs=1"),
+("3","MonitorGamer", 1600, "Monitor de 144hz para jogos","https://th.bing.com/th/id/OIP.KO_rSdcpvQZVM_8MZurcSwHaHJ?pid=ImgDet&rs=1");
 
 
 SELECT * FROM users;
@@ -36,13 +46,13 @@ SELECT * FROM products;
 
 
 SELECT * FROM users
-WHERE "id" = "4";
+WHERE "id" = "1";
  
 DELETE from products
 WHERE "id" = "5";
 
-DELETE from users
-WHERE "id" = "4";
+DELETE from purchases_products
+WHERE "product_id" = "2";
 
 UPDATE users
 set email = "fulano@gmail.com"
@@ -72,17 +82,23 @@ WHERE "price" >= 2400 and  "price" <= 2500 ;
 
 
 CREATE TABLE  purchases (
-id TEXT PRIMARY KEY UNIQUE NOT NULL,
-total_price REAL UNIQUE NOT NULL,
-paid INTEGER NOT NULL,
-delivered_at TEXT,
+id_compra TEXT PRIMARY KEY UNIQUE NOT NULL,
+buyer TEXT NOT NULL,
 buyer_id TEXT NOT NULL,
+totalPrice REAL NOT NULL,
+createdAt TEXT,
+paid INTEGER NOT NULL,
 FOREIGN KEY (buyer_id) REFERENCES users (id)
 );
+
+INSERT INTO purchases(id_compra,buyer,buyer_id,totalPrice,createdAt,paid)
+VALUES("d001","josé","1","50","24/01","false");
 
 DROP TABLE purchases;
 
 SELECT * FROM purchases;
+
+
 
 INSERT INTO purchases (id, total_price, paid, delivered_at, buyer_id)
 VALUES ("d001", "50", true, "00/00", "1"), ("d002", "10", false, "00/00", "1");
@@ -104,15 +120,15 @@ CREATE TABLE purchases_products (
 purchase_id TEXT  NOT NULL,
 product_id TEXT NOT NULL,
 quantity INTEGER NOT NULL,
-FOREIGN KEY (purchase_id) REFERENCES purchases (id),
+FOREIGN KEY (purchase_id) REFERENCES purchases (id_compra),
 FOREIGN KEY (product_id) REFERENCES products (id)
 );
 
 
 INSERT INTO purchases_products (purchase_id, product_id, quantity)
 VALUES("d001","1","5"),
-("d002","2","2"),
-("d003","3","3");
+("d001","2","2"),
+("d001","3","3");
 
 SELECT * FROM purchases_products;
 DROP TABLE purchases_products;
@@ -122,16 +138,22 @@ SELECT
 products.id AS productId,
 products.name AS productName,
 products.price AS productPrice,
-products.category,
-purchases.id AS purchaseId,
+products.description,
+products.imageUrl,
+purchases.id_compra AS purchaseId,
 purchases.buyer_id AS buyerId,
-purchases.total_price AS totalPrice,
+purchases.buyer,
+users.email,
+purchases.totalPrice AS totalPrice,
 purchases_products.quantity
+
 FROM purchases_products
 
+INNER JOIN users
+ON purchases.buyer_id = users.id
 
 INNER JOIN products
 ON purchases_products.product_id = products.id
 
 INNER JOIN purchases
-ON purchases_products.purchase_id = purchases.id;
+ON purchases_products.purchase_id = purchases.id_compra;

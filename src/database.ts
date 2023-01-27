@@ -4,6 +4,7 @@ import {  TUsers, TProducts, TPurchases } from "./types"
 export const users: TUsers[] = [
     {
     id: "001",
+    name: "joas",
     email: "user1@gmail.com",
     password: "123"
     },

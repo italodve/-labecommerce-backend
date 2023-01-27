@@ -1,15 +1,17 @@
 
 export type TUsers = {
-id: string,
-email: string,
-password: string
+    id: string,
+    name: string,
+    email: string,
+    password: string
 }
 
 export type TProducts = {
 id: string,
 name: string,
 price: number,
-category: string
+description: string,
+imageUrl: string
 }
 export type TPurchases = {
  userid:string,
