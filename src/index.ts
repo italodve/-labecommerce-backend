@@ -1,7 +1,7 @@
 import express, { Request, response, Response } from 'express'
 import cors from 'cors'
 
-import { TUsers,TProducts } from './types'
+import { TUsers,TProducts, TPurchases, TPurchases_products } from './types'
 import { db } from './knex'
 
 const app = express()
@@ -168,9 +168,19 @@ if(nameAlreadyExists) {
 //
 app.get("/products", async (req: Request, res: Response) => {
     try {
-        const result = await db("products")
-      
-        res.status(200).send({result})
+       
+        const searchTerm = req.query.q as string | undefined
+
+        if (searchTerm === undefined) {
+            const result = await db("products")
+            res.status(200).send(result)
+        } else {
+            const result = await db("products")
+                .where("name", "LIKE", `%${searchTerm}%`)
+               
+
+         res.status(200).send(result)
+        }
         } catch (error: any) {
             console.log(error)
         
@@ -181,6 +191,7 @@ app.get("/products", async (req: Request, res: Response) => {
             res.send(error.message)
         }
 })
+
 app.get("/purchases", async (req: Request, res: Response) => {
     try {
         const result = await db("purchases")
@@ -263,15 +274,98 @@ app.delete("/products/:id",(req: Request, res: Response)=>{
        res.status(200).send("produto deletado")
    })
 
-   app.put('/products/:id', (req: Request, res: Response) => {
-
-    const id = req.params.id
+   app.put('/products/:id', async (req: Request, res: Response) => {
+     
+    try{
+    const idToEdit = req.params.id
     
-    const newId = req.body.id as string | undefined         // cliente pode ou não enviar id
-    const newName = req.body.name as string | undefined     // cliente pode ou não enviar name
+    const newId = req.body.id as string | undefined         
+    const newName = req.body.name as string | undefined     
     const newPrice  = req.body.price as number | undefined
-    const newCategory = req.body.category as string | undefined
-    
+    const newDescription = req.body.description as string | undefined
+    const newImageUrl =  req.body.imageUrl as string 
+
+    if (newId !== undefined) {
+        if (typeof newId !== "string") {
+            res.status(400)
+            throw new Error("'id' deve ser string")
+        }
+
+      
+    }
+
+    if (newName !== undefined) {
+        if (typeof newName !== "string") {
+            res.status(400)
+            throw new Error("'name' deve ser string")
+        }
+
+        if (newName.length < 2) {
+            res.status(400)
+            throw new Error("'name' deve possuir pelo menos 2 caracteres")
+        }
+    }
+
+    if (newDescription !== undefined) {
+        if (typeof newDescription !== "string") {
+            res.status(400)
+            throw new Error("'description' deve ser string")
+        }
+    }
+    if (newImageUrl !== undefined) {
+        if (typeof newImageUrl !== "string") {
+            res.status(400)
+            throw new Error("'url' deve ser string")
+        }
+    }
+
+   
+
+    if (newPrice !== undefined) {
+        if (typeof newPrice !== "number") {
+            res.status(400)
+            throw new Error("'status' deve ser number (0 para incompleta ou 1 para completa)")
+        }
+    }
+
+    const [ product ]: TProducts[] | undefined[] = await db("products").where({ id: idToEdit })
+
+    if (!product) {
+        res.status(404)
+        throw new Error("'id' não encontrada")
+    }
+
+    const newProduct: TProducts = {
+    id: newId || product.id,
+      name: newName || product.name,
+      price: newPrice || product.price,
+      description: newDescription || product.description,
+      imageUrl:   newImageUrl || product.imageUrl
+
+    }
+
+    await db("products").update(newProduct).where({ id: idToEdit })
+
+    res.status(200).send({
+        message: "produto editado com sucesso",
+        product: newProduct
+    })
+
+    } catch (error) {
+        console.log(error)
+
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
+    }
+    })
+
 
     
     //const product = products.find((product) => product.id === id)
@@ -287,8 +381,8 @@ app.delete("/products/:id",(req: Request, res: Response)=>{
 
     }
     */
-    res.status(200).send("Atualização realizada com sucesso")
-    })
+    //res.status(200).send("Atualização realizada com sucesso")
+    //})
 
     /*app.put("/users/:id",(req:Request, res:Response) =>{
         const id = req.params.id
@@ -358,9 +452,100 @@ res.status(200).send("produto cadastrado com sucesso")
 }
 })
 
+app.post("/purchases/:purchaseId/products/:productId", async (req: Request, res: Response) => {
+    try {
+        const purchaseId= req.params.purchaseId
+        const productId = req.params.productId
+
+
+        const [ purchase ]: TPurchases[] | undefined[] = await db("purchases").where({ id: purchaseId })
+
+        if (!purchase) {
+            res.status(404)
+            throw new Error("'taskId' não encontrado")
+        }
+
+        const [ product ]: TProducts[] | undefined[] = await db("products").where({ id: productId })
+
+        if (!product) {
+            res.status(404)
+            throw new Error("'userId' não encontrado")
+        }
+
+        const newPurchase_products: TPurchases_products = {
+            purchase_id: purchaseId,
+            product_id: productId,
+            
+        }
+
+        await db("purchases_products").insert(newPurchase_products)
+
+        res.status(201).send({ message: "pedido feito" })
+
+    } catch (error) {
+        console.log(error)
+
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
+    }
+})
+
+
+app.delete("/purchases/:purchaseId/products/:productId", async (req: Request, res: Response) => {
+    try {
+        const purchaseIdToDelete= req.params.purchaseId
+        const productIdToDelete = req.params.productId
+
+
+        const [ purchase ]: TPurchases[] | undefined[] = await db("purchases").where({ id: purchaseIdToDelete })
+
+        if (!purchase) {
+            res.status(404)
+            throw new Error("'taskId' não encontrado")
+        }
+
+        const [ product ]: TProducts[] | undefined[] = await db("products").where({ id: productIdToDelete })
+
+        if (!product) {
+            res.status(404)
+            throw new Error("'userId' não encontrado")
+        }
+
+
+        await db("purchases_products").del()
+            .where({ purchase_id: purchaseIdToDelete })
+            .andWhere({ product_id: productIdToDelete })
+
+        res.status(200).send({ message: "compra removida" })
+
+
+    } catch (error) {
+        console.log(error)
+
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
+    }
+})
+
+
+
 app.get("/purchases_products/:id", async (req: Request, res:Response) =>{
     
-    const id = req.params.id
+    
     try{
         const compra = await db("purchases")
         .innerJoin(
