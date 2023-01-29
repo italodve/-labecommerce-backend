@@ -82,17 +82,18 @@ WHERE "price" >= 2400 and  "price" <= 2500 ;
 
 
 CREATE TABLE  purchases (
-id_compra TEXT PRIMARY KEY UNIQUE NOT NULL,
+id TEXT PRIMARY KEY UNIQUE NOT NULL,
 buyer TEXT NOT NULL,
 buyer_id TEXT NOT NULL,
 totalPrice REAL NOT NULL,
-createdAt TEXT,
+createdAt TEXT DEFAULT (DATETIME()) NOT NULL,
 paid INTEGER NOT NULL,
 FOREIGN KEY (buyer_id) REFERENCES users (id)
+FOREIGN KEY (buyer) REFERENCES users (name)
 );
 
-INSERT INTO purchases(id_compra,buyer,buyer_id,totalPrice,createdAt,paid)
-VALUES("d001","josé","1","50","24/01","false");
+INSERT INTO purchases(id,buyer,buyer_id,totalPrice,paid)
+VALUES("d001","joão","1","50","false");
 
 DROP TABLE purchases;
 
@@ -119,8 +120,8 @@ WHERE users.id="1";
 CREATE TABLE purchases_products (
 purchase_id TEXT  NOT NULL,
 product_id TEXT NOT NULL,
-quantity INTEGER NOT NULL,
-FOREIGN KEY (purchase_id) REFERENCES purchases (id_compra),
+quantity TEXT ,
+FOREIGN KEY (purchase_id) REFERENCES purchases (id),
 FOREIGN KEY (product_id) REFERENCES products (id)
 );
 

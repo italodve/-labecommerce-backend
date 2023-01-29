@@ -13,9 +13,16 @@ price: number,
 description: string,
 imageUrl: string
 }
+
+export type TPurchases_products = {
+purchase_id: string,
+product_id: string,
+
+}
 export type TPurchases = {
- userid:string,
- productid:string
- quantity:number,
- totalPrice:number
+    id_compra:string,
+    buyer:string,
+    buyer_id:string,
+ totalPrice:string,
+ paid: number
 }
